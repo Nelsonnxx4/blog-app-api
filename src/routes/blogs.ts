@@ -22,6 +22,6 @@ router.get("/", createBlog);
 router.get("/:id", updateBlog);
 
 // get delete blog
-router.get("/:", deleteBlog);
+router.get("/:id", deleteBlog);
 
 export default router;

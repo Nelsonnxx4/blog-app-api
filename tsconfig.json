@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022"],
+    "target": "es2016",
+    "module": "commonjs",
+    // "moduleResolution": "bundler",
+    // "lib": ["ES2022"],
     "rootDir": "./src",
     "outDir": "./dist",
 
@@ -11,13 +11,15 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
 
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
 
     "baseUrl": "./src",
-    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["src/*"],
       "@controllers/*": ["src/controllers/*"],

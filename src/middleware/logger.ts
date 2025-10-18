@@ -1,20 +1,22 @@
 import colors from "colors";
+import type { Request, Response, NextFunction } from "express";
 
-const logger = (req, res, next) => {
+const logger = (req: Request, res: Response, next: NextFunction) => {
   const methodColors = {
     GET: "green",
     POST: "blue",
     PUT: "yellow",
     DELETE: "red",
-  };
+  } as const;
 
-  const color = methodColors[req.method];
+  const color =
+    methodColors[req.method as keyof typeof methodColors] || "white";
 
-  console.log(
-    `${req.method} ${req.protocol}://${req.get("host")}${req.originalUrl}`[
-      color
-    ]
-  );
+  const message = `${req.method} ${req.protocol}://${req.get("host")}${
+    req.originalUrl
+  }`;
+  console.log(colors[color](message));
+
   next();
 };
 
