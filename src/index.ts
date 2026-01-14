@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 // filess
 import blogs from "./routes/blogs";
+import auth from "./routes/auth";
 import logger from "./middleware/logger";
 import errorHandler from "./middleware/error";
 import notFound from "./middleware/notFound";
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.use("/auth", auth);
 app.use("/blogs", blogs);
 
 app.use(notFound);

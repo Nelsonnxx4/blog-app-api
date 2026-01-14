@@ -109,7 +109,7 @@ export const SignIn = async (
     }
 
     // Generate JWT token
-    const token = jwt.sign(
+    const token = Jwt.sign(
       {
         userId: user._id,
         email: user.email,
@@ -157,6 +157,38 @@ export const SignOut = async (
     });
   } catch (error) {
     console.error("SignOut Error:", error);
+    next(error);
+  }
+};
+
+export const GetCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as any).userId; // Set by auth middleware
+
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("GetCurrentUser Error:", error);
     next(error);
   }
 };
