@@ -6,6 +6,7 @@ import auth from "./routes/auth";
 import logger from "./middleware/logger";
 import errorHandler from "./middleware/error";
 import notFound from "./middleware/notFound";
+import connectDB from "config/db";
 
 const app = express();
 
@@ -13,6 +14,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// logger middleware
+app.use(logger);
 
 // Routes
 app.use("/auth", auth);
@@ -23,8 +27,7 @@ app.use(notFound);
 // errorhandler middleware
 app.use(errorHandler);
 
-// logger middleware
-app.use(logger);
+connectDB();
 
 // Start server
 const PORT = process.env.PORT || 5000;

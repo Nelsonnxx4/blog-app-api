@@ -1,5 +1,5 @@
-import { blogs } from "../constants/blogData.js";
 import type { Request, Response, NextFunction } from "express";
+import Blog from "../models/blog";
 
 // @desc get all blogs
 // @route GET /blogs
@@ -88,6 +88,8 @@ export const updateBlog = (req: Request, res: Response, next: NextFunction) => {
   if (author) blog.author = author;
   if (content) blog.content = content;
   if (category) blog.category = category;
+
+  res.status(200).json(blog);
 };
 
 // @desc delete blog

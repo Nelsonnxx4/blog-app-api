@@ -6,6 +6,8 @@ import {
   updateBlog,
   deleteBlog,
 } from "../controllers/blogsController.js";
+import { authenticate } from "middleware/auth.js";
+import { blogValidation } from "middleware/blogValidation.js";
 
 const router = express.Router();
 
@@ -16,12 +18,12 @@ router.get("/", getBlogs);
 router.get("/:id", getBlog);
 
 // get create blog
-router.get("/", createBlog);
+router.post("/", authenticate, blogValidation, createBlog);
 
 // get update blog
-router.get("/:id", updateBlog);
+router.put("/:id", authenticate, blogValidation, updateBlog);
 
 // get delete blog
-router.get("/:id", deleteBlog);
+router.delete("/:id", authenticate, blogValidation, deleteBlog);
 
 export default router;

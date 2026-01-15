@@ -6,7 +6,10 @@ import {
   GetCurrentUser,
 } from "../controllers/authController";
 import { authenticate } from "../middleware/auth";
-import { signUpValidation, signInValidation } from "../middleware/validation";
+import {
+  signUpValidation,
+  signInValidation,
+} from "../middleware/userValidation";
 
 const router = Router();
 
