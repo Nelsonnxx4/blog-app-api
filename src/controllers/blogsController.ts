@@ -1,112 +1,239 @@
 import type { Request, Response, NextFunction } from "express";
 import Blog from "../models/blog";
+import { validationResult } from "express-validator";
 
-// @desc get all blogs
-// @route GET /blogs
-interface Blog {
-  id: number;
-  title: string;
-  author: string;
-  content: string;
-  category: string;
-  date: string;
-}
-
-interface GetBlogsRequest extends Request {
-  query: {
-    limit?: string;
-  };
-}
-
-export const getBlogs = (
-  req: GetBlogsRequest,
+// @desc    Get all blogs
+// @route   GET /blogs
+// @access  Public
+export const getBlogs = async (
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const limit = parseInt(req.query.limit as string);
+  try {
+    const limit = parseInt(req.query.limit as string);
 
-  if (!isNaN(limit) && limit > 0) {
-    res.status(200).json(blogs.slice(0, limit));
-  } else {
-    res.status(200).json(blogs);
+    let query = Blog.find()
+      .populate("userId", "name email") // Populate user info
+      .sort({ createdAt: -1 }); // Newest first
+
+    if (!isNaN(limit) && limit > 0) {
+      query = query.limit(limit);
+    }
+
+    const blogs = await query;
+
+    res.status(200).json({
+      success: true,
+      count: blogs.length,
+      data: blogs,
+    });
+  } catch (error) {
+    console.error("Get Blogs Error:", error);
+    next(error);
   }
 };
 
-// @desc get single blog
-// @route GET /blogs/:id
-export const getBlog = (req: Request, res: Response, next: NextFunction) => {
-  const id = parseInt(req.params.id as string);
-  const blog = blogs.find((blog) => blog.id === id);
+// @desc    Get single blog
+// @route   GET /blogs/:id
+// @access  Public
+export const getBlog = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const blog = await Blog.findById(req.params.id).populate(
+      "userId",
+      "name email"
+    );
 
-  if (!blog) {
-    const error = new Error(`blog with the id of ${id} was not found`);
-    (error as any).status = 404;
-    return next(error);
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: `Blog with id ${req.params.id} was not found`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: blog,
+    });
+  } catch (error) {
+    // Handle invalid MongoDB ObjectId
+    if ((error as any).kind === "ObjectId") {
+      return res.status(404).json({
+        success: false,
+        message: `Blog with id ${req.params.id} was not found`,
+      });
+    }
+    console.error("Get Blog Error:", error);
+    next(error);
   }
-
-  res.status(200).json(blog);
 };
 
-// @desc create new blog
-// @route POST /blogs
-export const createBlog = (req: Request, res: Response, next: NextFunction) => {
-  const { title, author, content, category } = req.body;
+// @desc    Create new blog
+// @route   POST /blogs
+// @access  Private (requires authentication)
+export const createBlog = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array(),
+      });
+    }
 
-  if (!title || !author || !content || !category) {
-    const error = new Error("All fields are required");
-    (error as any).status = 400;
-    return next(error);
+    const { title, author, content, category } = req.body;
+
+    // Create blog with authenticated user's ID
+    const blog = await Blog.create({
+      title,
+      author,
+      content,
+      category,
+      userId: req.userId, // From auth middleware
+    });
+
+    // Populate user info before sending response
+    await blog.populate("userId", "name email");
+
+    res.status(201).json({
+      success: true,
+      message: "Blog created successfully",
+      data: blog,
+    });
+  } catch (error) {
+    console.error("Create Blog Error:", error);
+    next(error);
   }
-
-  const newBlog = {
-    id: blogs.length + 1,
-    title,
-    author,
-    content,
-    category,
-    date: new Date().toISOString().split("T")[0] as string,
-  };
-
-  blogs.push(newBlog);
-  res.status(201).json(newBlog);
 };
 
-// @desc update blog
-// @route PUT /blogs/:id
-export const updateBlog = (req: Request, res: Response, next: NextFunction) => {
-  const id = parseInt(req.params.id as string);
-  const blog = blogs.find((blog) => blog.id === id);
+// @desc    Update blog
+// @route   PUT /blogs/:id
+// @access  Private (requires authentication)
+export const updateBlog = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
 
-  if (!blog) {
-    const error = new Error(`post with the id of ${id} was not found`);
-    (error as any).status = 404;
-    return next(error);
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: `Blog with id ${req.params.id} was not found`,
+      });
+    }
+
+    // Check if user owns the blog
+    if (blog.userId.toString() !== req.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to update this blog",
+      });
+    }
+
+    const { title, author, content, category } = req.body;
+
+    // Update only provided fields
+    if (title !== undefined) blog.title = title;
+    if (author !== undefined) blog.author = author;
+    if (content !== undefined) blog.content = content;
+    if (category !== undefined) blog.category = category;
+
+    const updatedBlog = await blog.save();
+    await updatedBlog.populate("userId", "name email");
+
+    res.status(200).json({
+      success: true,
+      message: "Blog updated successfully",
+      data: updatedBlog,
+    });
+  } catch (error) {
+    if ((error as any).kind === "ObjectId") {
+      return res.status(404).json({
+        success: false,
+        message: `Blog with id ${req.params.id} was not found`,
+      });
+    }
+    console.error("Update Blog Error:", error);
+    next(error);
   }
-
-  const { title, author, content, category } = req.body;
-  if (title) blog.title = title;
-  if (author) blog.author = author;
-  if (content) blog.content = content;
-  if (category) blog.category = category;
-
-  res.status(200).json(blog);
 };
 
-// @desc delete blog
-// @route DELETE /blogs/:id
-export const deleteBlog = (req: Request, res: Response, next: NextFunction) => {
-  const id = parseInt(req.params.id as string);
-  const blog = blogs.find((blog) => blog.id === id);
+// @desc    Delete blog
+// @route   DELETE /blogs/:id
+// @access  Private (requires authentication)
+export const deleteBlog = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
 
-  if (!blog) {
-    const error = new Error(`A blog with the id of ${id} was not found`);
-    (error as any).status = 404;
-    return next(error);
-  }
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: `Blog with id ${req.params.id} was not found`,
+      });
+    }
 
-  const index = blogs.findIndex((blog) => blog.id === id);
-  if (index !== -1) {
-    blogs.splice(index, 1);
+    // Check if user owns the blog
+    if (blog.userId.toString() !== req.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this blog",
+      });
+    }
+
+    await blog.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Blog deleted successfully",
+      data: {},
+    });
+  } catch (error) {
+    if ((error as any).kind === "ObjectId") {
+      return res.status(404).json({
+        success: false,
+        message: `Blog with id ${req.params.id} was not found`,
+      });
+    }
+    console.error("Delete Blog Error:", error);
+    next(error);
   }
-  res.status(200).json(blogs);
+};
+
+// @desc    Get blogs by authenticated user
+// @route   GET /blogs/my-blogs
+// @access  Private
+export const getMyBlogs = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const blogs = await Blog.find({ userId: req.userId })
+      .populate("userId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: blogs.length,
+      data: blogs,
+    });
+  } catch (error) {
+    console.error("Get My Blogs Error:", error);
+    next(error);
+  }
 };

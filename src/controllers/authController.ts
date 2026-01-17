@@ -1,10 +1,14 @@
 import type { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
-import Jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { validationResult } from "express-validator";
 import User from "../models/user";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-fallback-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not defined in environment variables");
+}
+
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
 export const SignUp = async (
@@ -33,22 +37,19 @@ export const SignUp = async (
       });
     }
 
-    // Hash passwordd
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    //   Create new user
-
+    // Create new user
     const user = await User.create({
       email,
       password: hashedPassword,
       name,
     });
 
-    //   generate tokenn
-    const token = Jwt.sign(
+    const token = jwt.sign(
       {
-        userId: user._id,
+        userId: user._id.toString(),
         email: user.email,
       },
       JWT_SECRET as string,
@@ -59,12 +60,13 @@ export const SignUp = async (
 
     res.status(201).json({
       success: true,
-      message: "User signed up successfull",
+      message: "User signed up successfully",
       data: {
         token,
         user: {
           id: user._id,
           email: user.email,
+          name: user.name,
         },
       },
     });
@@ -108,14 +110,16 @@ export const SignIn = async (
       });
     }
 
-    // Generate JWT token
-    const token = Jwt.sign(
+    // Generate JWT token with proper typing
+    const token = jwt.sign(
       {
-        userId: user._id,
+        userId: user._id.toString(),
         email: user.email,
       },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      JWT_SECRET as string,
+      {
+        expiresIn: JWT_EXPIRES_IN,
+      }
     );
 
     // Return success response
@@ -167,7 +171,7 @@ export const GetCurrentUser = async (
   next: NextFunction
 ) => {
   try {
-    const userId = (req as any).userId; // Set by auth middleware
+    const userId = (req as any).userId;
 
     const user = await User.findById(userId).select("-password");
     if (!user) {
