@@ -1,12 +1,15 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 // filess
 import blogs from "./routes/blogs";
 import auth from "./routes/auth";
 import logger from "./middleware/logger";
 import errorHandler from "./middleware/error";
 import notFound from "./middleware/notFound";
-import connectDB from "config/db";
+import connectDB from "./config/db";
+
+dotenv.config();
 
 const app = express();
 

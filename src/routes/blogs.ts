@@ -5,9 +5,9 @@ import {
   createBlog,
   updateBlog,
   deleteBlog,
-} from "../controllers/blogsController.js";
-import { authenticate } from "middleware/auth.js";
-import { blogValidation } from "middleware/blogValidation.js";
+} from "../controllers/blogsController";
+import { authenticate } from "../middleware/auth";
+import { blogValidation } from "../middleware/blogValidation";
 
 const router = express.Router();
 
