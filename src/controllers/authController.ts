@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import type { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";

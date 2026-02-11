@@ -14,8 +14,8 @@ export const getBlogs = async (
     const limit = parseInt(req.query.limit as string);
 
     let query = Blog.find()
-      .populate("userId", "name email") // Populate user info
-      .sort({ createdAt: -1 }); // Newest first
+      .populate("userId", "name email")
+      .sort({ createdAt: -1 });
 
     if (!isNaN(limit) && limit > 0) {
       query = query.limit(limit);
@@ -98,7 +98,7 @@ export const createBlog = async (
       author,
       content,
       category,
-      userId: req.userId, // From auth middleware
+      userId: req.userId,
     });
 
     // Populate user info before sending response
