@@ -213,27 +213,3 @@ export const deleteBlog = async (
     next(error);
   }
 };
-
-// @desc    Get blogs by authenticated user
-// @route   GET /blogs/my-blogs
-// @access  Private
-export const getMyBlogs = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const blogs = await Blog.find({ userId: req.userId })
-      .populate("userId", "name email")
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      count: blogs.length,
-      data: blogs,
-    });
-  } catch (error) {
-    console.error("Get My Blogs Error:", error);
-    next(error);
-  }
-};

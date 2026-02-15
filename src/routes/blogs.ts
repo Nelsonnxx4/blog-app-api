@@ -18,7 +18,7 @@ router.get("/", getBlogs);
 router.get("/:id", getBlog);
 
 // get create blog
-router.post("/", authenticate, blogValidation, createBlog);
+router.post("/create", authenticate, blogValidation, createBlog);
 
 // get update blog
 router.put("/:id", authenticate, blogValidation, updateBlog);
